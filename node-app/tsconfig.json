@@ -1,0 +1,8 @@
+{
+    "compilerOptions": {
+        "outDir": "./dist",
+        "rootDir": "./src",
+        //コンパイラのルール縛り付与らしい。今後教えてくれるっぽい
+        "strict": true
+    }
+}
