@@ -1,4 +1,5 @@
 "use strict";
+// 即時関数から開始
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -41,15 +42,6 @@ var printline = function (text, breakLine) {
     if (breakLine === void 0) { breakLine = true; }
     process.stdout.write(text + (breakLine ? '\n' : ''));
 };
-// printlineと同じ内容
-var printLine2 = function (text, breakLine) {
-    if (breakLine === void 0) { breakLine = true; }
-    // デフォルト値を設定するのと同義の処理
-    if (breakLine === undefined) {
-        breakLine = true;
-    }
-    process.stdout.write(text + (breakLine ? '/n' : ''));
-};
 // 入力関数
 // asyncとawaitでpromiseからの返り値を扱う
 // process.stdin.onceで値を一度のみ受け取る
@@ -59,29 +51,92 @@ var promptInput = function (text) { return __awaiter(void 0, void 0, void 0, fun
         switch (_a.label) {
             case 0:
                 printline("\n" + text + "\n>", false);
-                return [4 /*yield*/, new Promise(function (resolve) { return process.stdin.once('data', function (data) {
-                        return resolve(data.toString());
-                    }); })];
+                return [4 /*yield*/, new Promise(function (resolve) { return process.stdin.once('data', function (data) { return resolve(data.toString()); }); })];
             case 1:
                 input = _a.sent();
                 return [2 /*return*/, input.trim()];
         }
     });
 }); };
+// 上だと可読性的に嬉しいらしい
+var HitAndBlow = /** @class */ (function () {
+    function HitAndBlow() {
+        // 型アノテーション(string[]など)も本来なら不要。ただし、answerについては初期値が空なので必要。
+        this.answerSource = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+        this.answer = [];
+        this.tryCount = 0;
+    }
+    // 問題の正解となる数字列を作成する。
+    HitAndBlow.prototype.setting = function () {
+        // 1.answerSourceからランダムに値を１つ取り出す。
+        // 2.その値がまだ使用されていないものであればanswer配列に追加する。
+        // 3.answer配列が所定の数埋まるまで1~2を繰り返す。
+        var answerLength = 3;
+        while (this.answer.length < answerLength) {
+            var randNum = Math.floor(Math.random() * this.answerSource.length);
+            var selectedItem = this.answerSource[randNum];
+            if (!this.answer.includes(selectedItem)) {
+                this.answer.push(selectedItem);
+            }
+        }
+    };
+    // H&Bの本体部分
+    HitAndBlow.prototype.play = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var inputArr, result;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, promptInput('「,」区切りで３つの数字を入力してください')];
+                    case 1:
+                        inputArr = (_a.sent()).split(',');
+                        result = this.check(inputArr);
+                        if (result.hit !== this.answer.length) {
+                            // 不正解の場合→チェック結果を表示して続行
+                            printline("---\nHit: " + result.hit + "\nBlow: " + result.blow + "\n---");
+                            this.tryCount += 1;
+                            this.play();
+                        }
+                        else {
+                            // 正解の場合→終了
+                            this.tryCount += 1;
+                        }
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    HitAndBlow.prototype.check = function (input) {
+        var _this = this;
+        var hitCount = 0;
+        var blowCount = 0;
+        input.forEach(function (val, index) {
+            if (val === _this.answer[index]) {
+                hitCount += 1;
+            }
+            else if (_this.answer.includes(val)) {
+                blowCount += 1;
+            }
+        });
+        return {
+            hit: hitCount,
+            blow: blowCount
+        };
+    };
+    return HitAndBlow;
+}());
 // 即時関数
+// ;は無くても34行目でも動く。要らない。
+;
 (function () { return __awaiter(void 0, void 0, void 0, function () {
-    var name, age;
+    var hitandBlow;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, promptInput('名前を入力してください')];
+            case 0:
+                hitandBlow = new HitAndBlow();
+                hitandBlow.setting();
+                return [4 /*yield*/, hitandBlow.play()];
             case 1:
-                name = _a.sent();
-                console.log(name);
-                return [4 /*yield*/, promptInput('年齢を入力してください')];
-            case 2:
-                age = _a.sent();
-                console.log(age);
-                process.exit();
+                _a.sent();
                 return [2 /*return*/];
         }
     });
