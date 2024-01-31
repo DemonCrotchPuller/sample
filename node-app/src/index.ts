@@ -11,6 +11,7 @@ const printline = (text : string,breakLine : boolean = true) => {
 // process.stdin.onceで値を一度のみ受け取る
 const promptInput = async(text : string) => {
     printline(`\n${text}\n>`,false)
+    // Promiseの前のnewは要らないらしい。Promiseは非同期処理用のインタフェースらしい。
     const input : string = await new Promise((resolve) => process.stdin.once('data',(data) => resolve(data.toString())))
     return input.trim()
 }
@@ -18,16 +19,22 @@ const promptInput = async(text : string) => {
 // 上だと可読性的に嬉しいらしい
 class HitAndBlow {
     // 型アノテーション(string[]など)も本来なら不要。ただし、answerについては初期値が空なので必要。
-    answerSource: string[] = ['0','1','2','3','4','5','6','7','8','9']
-    answer: string[] = []
-    tryCount: number = 0
+    private readonly answerSource: string[] = ['0','1','2','3','4','5','6','7','8','9']
+    private answer: string[] = []
+    private tryCount: number = 0
+    private mode: 'nomal' | 'hard'
+
+    // コンストラクター。constructorで宣言。インスタンス作成時に実行
+    constructor(mode: 'nomal' | 'hard'){
+        this.mode = mode
+    }
 
     // 問題の正解となる数字列を作成する。
     setting(){
         // 1.answerSourceからランダムに値を１つ取り出す。
         // 2.その値がまだ使用されていないものであればanswer配列に追加する。
         // 3.answer配列が所定の数埋まるまで1~2を繰り返す。
-        const answerLength = 3
+        const answerLength = this.getanswerLength()
 
         while(this.answer.length < answerLength){
             const randNum = Math.floor(Math.random() * this.answerSource.length)
@@ -38,10 +45,29 @@ class HitAndBlow {
         }
     }
 
+    // modeによる難易度（正解配列数）の設定
+    private getanswerLength(){
+        switch (this.mode){
+            case 'nomal':
+                return 3
+            case 'hard':
+                return 4
+        }
+    }
+
     // H&Bの本体部分
     async play(){
-        const inputArr = (await promptInput('「,」区切りで３つの数字を入力してください')).split(',')
-        // 入力された回答をチェックする。
+        const answeLength = this.getanswerLength()
+        const inputArr = (await promptInput(`「,」区切りで${answeLength}つの数字を入力してください`)).split(',')
+
+        // 入力チェック
+        if(!this.validate(inputArr)){
+            printline(`無効な入力です。`)
+            await this.play()
+            return
+        }
+
+        // 入力された回答の正誤判定をする。
         const result = this.check(inputArr)
 
         if(result.hit !== this.answer.length){
@@ -56,7 +82,19 @@ class HitAndBlow {
         }
     }
 
-    check(input : string[]){
+    // 入力チェック
+    private validate(inputArr : string[]){
+        // 入力された長さを判定
+        const isLengthValid = inputArr.length === this.answer.length
+        // answerSourceに含まれている文字列か（everyはforループみたいなもん）
+        const isAllAnsewerSourceOption = inputArr.every((val) => this.answerSource.includes(val))
+        // それぞれの文字列に重複がないか
+        const isAllDifferentValues = inputArr.every((val, i) => inputArr.indexOf(val) === i)
+        return isLengthValid && isAllAnsewerSourceOption && isAllDifferentValues
+    }
+
+    // 回答入力後の正誤判定処理
+    private check(input : string[]){
         let hitCount = 0
         let blowCount = 0
 
@@ -75,6 +113,13 @@ class HitAndBlow {
             blow : blowCount,
         }
     }
+
+    // ゲームの終了
+    end(){
+        printline(`正解です！\n試行回数${this.tryCount}回`)
+        process.exit()
+    }
+
 }
 
 // 即時関数
@@ -86,7 +131,8 @@ class HitAndBlow {
     // console.log(age)
     // process.exit()
     // インスタンス
-    const hitandBlow = new HitAndBlow()
+    const hitandBlow = new HitAndBlow('hard')
     hitandBlow.setting()
     await hitandBlow.play()
+    hitandBlow.end()
 })()

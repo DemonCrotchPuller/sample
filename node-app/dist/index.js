@@ -60,18 +60,20 @@ var promptInput = function (text) { return __awaiter(void 0, void 0, void 0, fun
 }); };
 // 上だと可読性的に嬉しいらしい
 var HitAndBlow = /** @class */ (function () {
-    function HitAndBlow() {
+    // コンストラクター。constructorで宣言。インスタンス作成時に実行
+    function HitAndBlow(mode) {
         // 型アノテーション(string[]など)も本来なら不要。ただし、answerについては初期値が空なので必要。
         this.answerSource = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
         this.answer = [];
         this.tryCount = 0;
+        this.mode = mode;
     }
     // 問題の正解となる数字列を作成する。
     HitAndBlow.prototype.setting = function () {
         // 1.answerSourceからランダムに値を１つ取り出す。
         // 2.その値がまだ使用されていないものであればanswer配列に追加する。
         // 3.answer配列が所定の数埋まるまで1~2を繰り返す。
-        var answerLength = 3;
+        var answerLength = this.getanswerLength();
         while (this.answer.length < answerLength) {
             var randNum = Math.floor(Math.random() * this.answerSource.length);
             var selectedItem = this.answerSource[randNum];
@@ -80,40 +82,76 @@ var HitAndBlow = /** @class */ (function () {
             }
         }
     };
+    // modeによる難易度（正解配列数）の設定
+    HitAndBlow.prototype.getanswerLength = function () {
+        switch (this.mode) {
+            case 'nomal':
+                return 3;
+            case 'hard':
+                return 4;
+        }
+    };
     // H&Bの本体部分
     HitAndBlow.prototype.play = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var inputArr, result;
+            var answeLength, inputArr, result;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, promptInput('「,」区切りで３つの数字を入力してください')];
+                    case 0:
+                        answeLength = this.getanswerLength();
+                        return [4 /*yield*/, promptInput("\u300C,\u300D\u533A\u5207\u308A\u3067" + answeLength + "\u3064\u306E\u6570\u5B57\u3092\u5165\u529B\u3057\u3066\u304F\u3060\u3055\u3044")];
                     case 1:
                         inputArr = (_a.sent()).split(',');
-                        result = this.check(inputArr);
-                        if (result.hit !== this.answer.length) {
-                            // 不正解の場合→チェック結果を表示して続行
-                            printline("---\nHit: " + result.hit + "\nBlow: " + result.blow + "\n---");
-                            this.tryCount += 1;
-                            this.play();
-                        }
-                        else {
-                            // 正解の場合→終了
-                            this.tryCount += 1;
-                        }
+                        if (!!this.validate(inputArr)) return [3 /*break*/, 3];
+                        printline("\u7121\u52B9\u306A\u5165\u529B\u3067\u3059\u3002");
+                        return [4 /*yield*/, this.play()];
+                    case 2:
+                        _a.sent();
                         return [2 /*return*/];
+                    case 3:
+                        result = this.check(inputArr);
+                        if (!(result.hit !== this.answer.length)) return [3 /*break*/, 5];
+                        // 不正解の場合→チェック結果を表示して続行
+                        printline("---\nHit: " + result.hit + "\nBlow: " + result.blow + "\n---");
+                        this.tryCount += 1;
+                        // awaitが無くても動く。何用？
+                        return [4 /*yield*/, this.play()];
+                    case 4:
+                        // awaitが無くても動く。何用？
+                        _a.sent();
+                        return [3 /*break*/, 6];
+                    case 5:
+                        // 正解の場合→終了
+                        this.tryCount += 1;
+                        _a.label = 6;
+                    case 6: return [2 /*return*/];
                 }
             });
         });
     };
+    // 入力チェック
+    HitAndBlow.prototype.validate = function (inputArr) {
+        var _this = this;
+        // 入力された長さを判定
+        var isLengthValid = inputArr.length === this.answer.length;
+        // answerSourceに含まれている文字列か（everyはforループみたいなもん）
+        var isAllAnsewerSourceOption = inputArr.every(function (val) { return _this.answerSource.includes(val); });
+        // それぞれの文字列に重複がないか
+        var isAllDifferentValues = inputArr.every(function (val, i) { return inputArr.indexOf(val) === i; });
+        return isLengthValid && isAllAnsewerSourceOption && isAllDifferentValues;
+    };
+    // 回答入力後の正誤判定処理
     HitAndBlow.prototype.check = function (input) {
         var _this = this;
         var hitCount = 0;
         var blowCount = 0;
         input.forEach(function (val, index) {
             if (val === _this.answer[index]) {
+                // ヒットの場合
                 hitCount += 1;
             }
             else if (_this.answer.includes(val)) {
+                // ブローの場合
                 blowCount += 1;
             }
         });
@@ -121,6 +159,11 @@ var HitAndBlow = /** @class */ (function () {
             hit: hitCount,
             blow: blowCount
         };
+    };
+    // ゲームの終了
+    HitAndBlow.prototype.end = function () {
+        printline("\u6B63\u89E3\u3067\u3059\uFF01\n\u8A66\u884C\u56DE\u6570" + this.tryCount + "\u56DE");
+        process.exit();
     };
     return HitAndBlow;
 }());
@@ -132,11 +175,12 @@ var HitAndBlow = /** @class */ (function () {
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                hitandBlow = new HitAndBlow();
+                hitandBlow = new HitAndBlow('hard');
                 hitandBlow.setting();
                 return [4 /*yield*/, hitandBlow.play()];
             case 1:
                 _a.sent();
+                hitandBlow.end();
                 return [2 /*return*/];
         }
     });
