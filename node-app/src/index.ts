@@ -12,9 +12,34 @@ const printline = (text : string,breakLine : boolean = true) => {
 const promptInput = async(text : string) => {
     printline(`\n${text}\n>`,false)
     // Promiseの前のnewは要らないらしい。Promiseは非同期処理用のインタフェースらしい。
-    const input : string = await new Promise((resolve) => process.stdin.once('data',(data) => resolve(data.toString())))
+    // const input : string = await new Promise((resolve) => process.stdin.once('data',(data) => resolve(data.toString())))
+    //return input.trim()
+    return readLine()
+}
+
+const readLine = async () => {
+    const input:string = await new Promise((resolve) => process.stdin.once('data',(data) => resolve(data.toString())))
     return input.trim()
 }
+
+// 今日はここまで^-^
+const promptSelect = async(text: string, values: readonly string[]): Promise<string> =>{
+    printline(`\n${text}`)
+    values.forEach((value) => {
+        printline(`-${value}`)
+    })
+    printline(`> `,false)
+
+    const input  = await readLine()
+    if(values.includes(input)){
+        return input
+    }else{
+        return promptSelect(text, values)
+    }
+}
+
+// 型エイリアスなのでトップレベルで宣言(なんかアッパーキャメル)
+type Mode = 'normal'|'hard'
 
 // 上だと可読性的に嬉しいらしい
 class HitAndBlow {
@@ -22,15 +47,17 @@ class HitAndBlow {
     private readonly answerSource: string[] = ['0','1','2','3','4','5','6','7','8','9']
     private answer: string[] = []
     private tryCount: number = 0
-    private mode: 'nomal' | 'hard'
+    private mode: Mode = 'normal'
 
     // コンストラクター。constructorで宣言。インスタンス作成時に実行
-    constructor(mode: 'nomal' | 'hard'){
-        this.mode = mode
-    }
+    //constructor(mode: Mode){
+    //    this.mode = mode
+    //}
 
     // 問題の正解となる数字列を作成する。
-    setting(){
+    async setting(){
+        // asで型アサーション
+        this.mode = await promptInput('normalかhardでモードを入力してください') as Mode
         // 1.answerSourceからランダムに値を１つ取り出す。
         // 2.その値がまだ使用されていないものであればanswer配列に追加する。
         // 3.answer配列が所定の数埋まるまで1~2を繰り返す。
@@ -48,11 +75,13 @@ class HitAndBlow {
     // modeによる難易度（正解配列数）の設定
     private getanswerLength(){
         switch (this.mode){
-            case 'nomal':
+            case 'normal':
                 return 3
             case 'hard':
                 return 4
-        }
+            default:
+                throw new Error(`${this.mode}は無効なモードです`);
+        }            
     }
 
     // H&Bの本体部分
@@ -131,8 +160,8 @@ class HitAndBlow {
     // console.log(age)
     // process.exit()
     // インスタンス
-    const hitandBlow = new HitAndBlow('hard')
-    hitandBlow.setting()
+    const hitandBlow = new HitAndBlow()
+    await hitandBlow.setting()
     await hitandBlow.play()
     hitandBlow.end()
 })()

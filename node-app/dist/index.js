@@ -60,35 +60,52 @@ var promptInput = function (text) { return __awaiter(void 0, void 0, void 0, fun
 }); };
 // 上だと可読性的に嬉しいらしい
 var HitAndBlow = /** @class */ (function () {
-    // コンストラクター。constructorで宣言。インスタンス作成時に実行
-    function HitAndBlow(mode) {
+    function HitAndBlow() {
         // 型アノテーション(string[]など)も本来なら不要。ただし、answerについては初期値が空なので必要。
         this.answerSource = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
         this.answer = [];
         this.tryCount = 0;
-        this.mode = mode;
+        this.mode = 'normal';
     }
+    // コンストラクター。constructorで宣言。インスタンス作成時に実行
+    //constructor(mode: Mode){
+    //    this.mode = mode
+    //}
     // 問題の正解となる数字列を作成する。
     HitAndBlow.prototype.setting = function () {
-        // 1.answerSourceからランダムに値を１つ取り出す。
-        // 2.その値がまだ使用されていないものであればanswer配列に追加する。
-        // 3.answer配列が所定の数埋まるまで1~2を繰り返す。
-        var answerLength = this.getanswerLength();
-        while (this.answer.length < answerLength) {
-            var randNum = Math.floor(Math.random() * this.answerSource.length);
-            var selectedItem = this.answerSource[randNum];
-            if (!this.answer.includes(selectedItem)) {
-                this.answer.push(selectedItem);
-            }
-        }
+        return __awaiter(this, void 0, void 0, function () {
+            var _a, answerLength, randNum, selectedItem;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        // asで型アサーション
+                        _a = this;
+                        return [4 /*yield*/, promptInput('normalかhardでモードを入力してください')];
+                    case 1:
+                        // asで型アサーション
+                        _a.mode = (_b.sent());
+                        answerLength = this.getanswerLength();
+                        while (this.answer.length < answerLength) {
+                            randNum = Math.floor(Math.random() * this.answerSource.length);
+                            selectedItem = this.answerSource[randNum];
+                            if (!this.answer.includes(selectedItem)) {
+                                this.answer.push(selectedItem);
+                            }
+                        }
+                        return [2 /*return*/];
+                }
+            });
+        });
     };
     // modeによる難易度（正解配列数）の設定
     HitAndBlow.prototype.getanswerLength = function () {
         switch (this.mode) {
-            case 'nomal':
+            case 'normal':
                 return 3;
             case 'hard':
                 return 4;
+            default:
+                throw new Error(this.mode + "\u306F\u7121\u52B9\u306A\u30E2\u30FC\u30C9\u3067\u3059");
         }
     };
     // H&Bの本体部分
@@ -175,10 +192,12 @@ var HitAndBlow = /** @class */ (function () {
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                hitandBlow = new HitAndBlow('hard');
-                hitandBlow.setting();
-                return [4 /*yield*/, hitandBlow.play()];
+                hitandBlow = new HitAndBlow();
+                return [4 /*yield*/, hitandBlow.setting()];
             case 1:
+                _a.sent();
+                return [4 /*yield*/, hitandBlow.play()];
+            case 2:
                 _a.sent();
                 hitandBlow.end();
                 return [2 /*return*/];
