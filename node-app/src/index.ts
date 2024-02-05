@@ -22,9 +22,10 @@ const readLine = async () => {
     return input.trim()
 }
 
-// 今日はここまで^-^
+// モード選択
 const promptSelect = async(text: string, values: readonly string[]): Promise<string> =>{
     printline(`\n${text}`)
+    // モードの種類を出力し提示
     values.forEach((value) => {
         printline(`-${value}`)
     })
@@ -32,8 +33,10 @@ const promptSelect = async(text: string, values: readonly string[]): Promise<str
 
     const input  = await readLine()
     if(values.includes(input)){
+        // 正しくmodeが入力された場合
         return input
     }else{
+        // normalかhard意外が入力された場合
         return promptSelect(text, values)
     }
 }
@@ -57,7 +60,8 @@ class HitAndBlow {
     // 問題の正解となる数字列を作成する。
     async setting(){
         // asで型アサーション
-        this.mode = await promptInput('normalかhardでモードを入力してください') as Mode
+        //this.mode = await promptInput('normalかhardでモードを入力してください') as Mode
+        this.mode = await promptSelect('normalかhardでモードを入力してください', ['normal','hard']) as Mode
         // 1.answerSourceからランダムに値を１つ取り出す。
         // 2.その値がまだ使用されていないものであればanswer配列に追加する。
         // 3.answer配列が所定の数埋まるまで1~2を繰り返す。

@@ -46,15 +46,49 @@ var printline = function (text, breakLine) {
 // asyncとawaitでpromiseからの返り値を扱う
 // process.stdin.onceで値を一度のみ受け取る
 var promptInput = function (text) { return __awaiter(void 0, void 0, void 0, function () {
+    return __generator(this, function (_a) {
+        printline("\n" + text + "\n>", false);
+        // Promiseの前のnewは要らないらしい。Promiseは非同期処理用のインタフェースらしい。
+        // const input : string = await new Promise((resolve) => process.stdin.once('data',(data) => resolve(data.toString())))
+        //return input.trim()
+        return [2 /*return*/, readLine()];
+    });
+}); };
+var readLine = function () { return __awaiter(void 0, void 0, void 0, function () {
+    var input;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, new Promise(function (resolve) { return process.stdin.once('data', function (data) { return resolve(data.toString()); }); })];
+            case 1:
+                input = _a.sent();
+                return [2 /*return*/, input.trim()];
+        }
+    });
+}); };
+// 今日はここまで^-^
+var promptSelect = function (text, values) { return __awaiter(void 0, void 0, void 0, function () {
     var input;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                printline("\n" + text + "\n>", false);
-                return [4 /*yield*/, new Promise(function (resolve) { return process.stdin.once('data', function (data) { return resolve(data.toString()); }); })];
+                printline("\n" + text);
+                // モードの種類を出力し提示（一回目は出力されない）
+                values.forEach(function (value) {
+                    printline("-" + value);
+                });
+                printline("> ", false);
+                return [4 /*yield*/, readLine()];
             case 1:
                 input = _a.sent();
-                return [2 /*return*/, input.trim()];
+                if (values.includes(input)) {
+                    // 正しくmodeが入力された場合
+                    return [2 /*return*/, input];
+                }
+                else {
+                    // normalかhard意外が入力された場合
+                    return [2 /*return*/, promptSelect(text, values)];
+                }
+                return [2 /*return*/];
         }
     });
 }); };
@@ -79,10 +113,12 @@ var HitAndBlow = /** @class */ (function () {
                 switch (_b.label) {
                     case 0:
                         // asで型アサーション
+                        //this.mode = await promptInput('normalかhardでモードを入力してください') as Mode
                         _a = this;
-                        return [4 /*yield*/, promptInput('normalかhardでモードを入力してください')];
+                        return [4 /*yield*/, promptSelect('normalかhardでモードを入力してください', ['normal', 'hard'])];
                     case 1:
                         // asで型アサーション
+                        //this.mode = await promptInput('normalかhardでモードを入力してください') as Mode
                         _a.mode = (_b.sent());
                         answerLength = this.getanswerLength();
                         while (this.answer.length < answerLength) {
