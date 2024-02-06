@@ -22,8 +22,8 @@ const readLine = async () => {
     return input.trim()
 }
 
-// モード選択
-const promptSelect = async(text: string, values: readonly string[]): Promise<string> =>{
+// モード選択 ジェネリクスで型指定
+const promptSelect = async<T extends string>(text: string, values: readonly T[]): Promise<T> =>{
     printline(`\n${text}`)
     // モードの種類を出力し提示
     values.forEach((value) => {
@@ -31,13 +31,13 @@ const promptSelect = async(text: string, values: readonly string[]): Promise<str
     })
     printline(`> `,false)
 
-    const input  = await readLine()
+    const input  = (await readLine()) as T
     if(values.includes(input)){
         // 正しくmodeが入力された場合
         return input
     }else{
         // normalかhard意外が入力された場合
-        return promptSelect(text, values)
+        return promptSelect<T>(text, values)
     }
 }
 
@@ -61,7 +61,7 @@ class HitAndBlow {
     async setting(){
         // asで型アサーション
         //this.mode = await promptInput('normalかhardでモードを入力してください') as Mode
-        this.mode = await promptSelect('normalかhardでモードを入力してください', ['normal','hard']) as Mode
+        this.mode = await promptSelect<Mode>('normalかhardでモードを入力してください', ['normal','hard'])
         // 1.answerSourceからランダムに値を１つ取り出す。
         // 2.その値がまだ使用されていないものであればanswer配列に追加する。
         // 3.answer配列が所定の数埋まるまで1~2を繰り返す。
