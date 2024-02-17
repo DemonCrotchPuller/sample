@@ -65,21 +65,21 @@ var readLine = function () { return __awaiter(void 0, void 0, void 0, function (
         }
     });
 }); };
-// 今日はここまで^-^
+// モード選択 ジェネリクスで型指定
 var promptSelect = function (text, values) { return __awaiter(void 0, void 0, void 0, function () {
     var input;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
                 printline("\n" + text);
-                // モードの種類を出力し提示（一回目は出力されない）
+                // モードの種類を出力し提示
                 values.forEach(function (value) {
                     printline("-" + value);
                 });
                 printline("> ", false);
                 return [4 /*yield*/, readLine()];
             case 1:
-                input = _a.sent();
+                input = (_a.sent());
                 if (values.includes(input)) {
                     // 正しくmodeが入力された場合
                     return [2 /*return*/, input];
@@ -92,6 +92,8 @@ var promptSelect = function (text, values) { return __awaiter(void 0, void 0, vo
         }
     });
 }); };
+// as const で readonly の扱いになる。タプル型
+var modes = ['normal', 'hard'];
 // 上だと可読性的に嬉しいらしい
 var HitAndBlow = /** @class */ (function () {
     function HitAndBlow() {
@@ -115,11 +117,15 @@ var HitAndBlow = /** @class */ (function () {
                         // asで型アサーション
                         //this.mode = await promptInput('normalかhardでモードを入力してください') as Mode
                         _a = this;
-                        return [4 /*yield*/, promptSelect('normalかhardでモードを入力してください', ['normal', 'hard'])];
+                        return [4 /*yield*/, promptSelect('normalかhardでモードを入力してください', modes)
+                            // 1.answerSourceからランダムに値を１つ取り出す。
+                            // 2.その値がまだ使用されていないものであればanswer配列に追加する。
+                            // 3.answer配列が所定の数埋まるまで1~2を繰り返す。
+                        ];
                     case 1:
                         // asで型アサーション
                         //this.mode = await promptInput('normalかhardでモードを入力してください') as Mode
-                        _a.mode = (_b.sent());
+                        _a.mode = _b.sent();
                         answerLength = this.getanswerLength();
                         while (this.answer.length < answerLength) {
                             randNum = Math.floor(Math.random() * this.answerSource.length);

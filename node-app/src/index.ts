@@ -41,8 +41,11 @@ const promptSelect = async<T extends string>(text: string, values: readonly T[])
     }
 }
 
-// 型エイリアスなのでトップレベルで宣言(なんかアッパーキャメル)
-type Mode = 'normal'|'hard'
+// as const で readonly の扱いになる。タプル型
+const modes = ['normal','hard'] as const
+// numberですべての配列を対象にしてtypeofで型を呼び出す
+type Mode = typeof modes[number]
+
 
 // 上だと可読性的に嬉しいらしい
 class HitAndBlow {
@@ -61,7 +64,7 @@ class HitAndBlow {
     async setting(){
         // asで型アサーション
         //this.mode = await promptInput('normalかhardでモードを入力してください') as Mode
-        this.mode = await promptSelect<Mode>('normalかhardでモードを入力してください', ['normal','hard'])
+        this.mode = await promptSelect<Mode>('normalかhardでモードを入力してください', modes)
         // 1.answerSourceからランダムに値を１つ取り出す。
         // 2.その値がまだ使用されていないものであればanswer配列に追加する。
         // 3.answer配列が所定の数埋まるまで1~2を繰り返す。
