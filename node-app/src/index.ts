@@ -2,7 +2,7 @@
 
 // 受け取った値を出力するだけ
 // 引数の=trueはタイが引き渡られなかった場合にundefinedを防止するためのデフォルト値
-const printline = (text : string,breakLine : boolean = true) => {
+const printLine = (text : string,breakLine : boolean = true) => {
     process.stdout.write(text + (breakLine ? '\n' : ''))
 }
 
@@ -10,7 +10,7 @@ const printline = (text : string,breakLine : boolean = true) => {
 // asyncとawaitでpromiseからの返り値を扱う
 // process.stdin.onceで値を一度のみ受け取る
 const promptInput = async(text : string) => {
-    printline(`\n${text}\n>`,false)
+    printLine(`\n${text}\n>`,false)
     // Promiseの前のnewは要らないらしい。Promiseは非同期処理用のインタフェースらしい。
     // const input : string = await new Promise((resolve) => process.stdin.once('data',(data) => resolve(data.toString())))
     //return input.trim()
@@ -22,14 +22,15 @@ const readLine = async () => {
     return input.trim()
 }
 
+// ゲームのモード選択だけでなく、NextActionを使用し継続中断の選択にも使用
 // モード選択 ジェネリクスで型指定
 const promptSelect = async<T extends string>(text: string, values: readonly T[]): Promise<T> =>{
-    printline(`\n${text}`)
+    printLine(`\n${text}`)
     // モードの種類を出力し提示
     values.forEach((value) => {
-        printline(`-${value}`)
+        printLine(`-${value}`)
     })
-    printline(`> `,false)
+    printLine(`> `,false)
 
     const input  = (await readLine()) as T
     if(values.includes(input)){
@@ -46,6 +47,58 @@ const modes = ['normal','hard'] as const
 // numberですべての配列を対象にしてtypeofで型を呼び出す
 type Mode = typeof modes[number]
 
+const nextActions = ['play again','exit'] as const
+type NextAction = typeof nextActions[number]
+
+const gameTitles = ['hit and blow','janken'] as const
+type GameTitle = typeof gameTitles[number]
+
+type GameStore = {
+    'hit and blow':HitAndBlow
+    'janken':Janken
+}
+
+class GameProcedure{
+    private currentGameTitle : GameTitle|'' = ''
+    private currentGame : HitAndBlow | Janken | null = null 
+
+    // 何も記載されていないコンストラクタだが、これで良い。
+    // gameStoreプロパティがセットされる
+    constructor(private readonly gameStore:GameStore){}
+
+    public async start(){
+        await this.select()
+        await this.play()
+    }
+
+    private async select(){
+        this.currentGameTitle = await promptSelect<GameTitle>('ゲームのタイトルを入力してください。', gameTitles)
+        this.currentGame = this.gameStore[this.currentGameTitle]
+    }
+
+    private async play(){
+        if(!this.currentGame)throw new Error('ゲームが選択されていません')
+        printLine(`===\n${this.currentGameTitle}を開始します。\n===`)
+        await this.currentGame.setting()
+        await this.currentGame.play()
+        this.currentGame.end()
+        // this.end()
+        const action = await promptSelect<NextAction>('ゲームを続けますか？',nextActions)
+        if(action === 'play again'){
+            await this.play()
+        }else if(action === 'exit'){
+            this.end()
+        }else{
+            const neverValue: never = action
+            throw new Error(`${neverValue} is an invalid acton.`)
+        }
+    }
+
+    private end(){
+        printLine('ゲームを終了しました')
+        process.exit()
+    }
+}
 
 // 上だと可読性的に嬉しいらしい
 class HitAndBlow {
@@ -98,7 +151,7 @@ class HitAndBlow {
 
         // 入力チェック
         if(!this.validate(inputArr)){
-            printline(`無効な入力です。`)
+            printLine(`無効な入力です。`)
             await this.play()
             return
         }
@@ -108,7 +161,7 @@ class HitAndBlow {
 
         if(result.hit !== this.answer.length){
             // 不正解の場合→チェック結果を表示して続行
-            printline(`---\nHit: ${result.hit}\nBlow: ${result.blow}\n---`)
+            printLine(`---\nHit: ${result.hit}\nBlow: ${result.blow}\n---`)
             this.tryCount += 1
             // awaitが無くても動く。何用？
             await this.play()
@@ -152,10 +205,98 @@ class HitAndBlow {
 
     // ゲームの終了
     end(){
-        printline(`正解です！\n試行回数${this.tryCount}回`)
-        process.exit()
+        printLine(`正解です！\n試行回数${this.tryCount}回`)
+        // process.exit()
+        this.reset()
     }
 
+    private reset(){
+        this.answer = []
+        this.tryCount = 0
+    }
+
+}
+
+// ジャンケン機能（コピー）
+const jankenOptions = ['rock', 'paper', 'scissors'] as const
+type JankenOption = typeof jankenOptions[number]
+
+class Janken {
+  private rounds = 0
+  private currentRound = 1
+  private result = {
+    win: 0,
+    lose: 0,
+    draw: 0,
+  }
+
+  async setting() {
+    const rounds = Number(await promptInput('何本勝負にしますか？'))
+    if (Number.isInteger(rounds) && 0 < rounds) {
+      this.rounds = rounds
+    } else {
+      await this.setting()
+    }
+  }
+
+  async play() {
+    const userSelected = await promptSelect(`【${this.currentRound}回戦】選択肢を入力してください。`, jankenOptions)
+    const randomSelected = jankenOptions[Math.floor(Math.random() * 3)]
+    const result = Janken.judge(userSelected, randomSelected)
+    let resultText: string
+
+    switch (result) {
+      case 'win':
+        this.result.win += 1
+        resultText = '勝ち'
+        break
+      case 'lose':
+        this.result.lose += 1
+        resultText = '負け'
+        break
+      case 'draw':
+        this.result.draw += 1
+        resultText = 'あいこ'
+        break
+    }
+    printLine(`---\nあなた: ${userSelected}\n相手${randomSelected}\n${resultText}\n---`)
+
+    if (this.currentRound < this.rounds) {
+      this.currentRound += 1
+      await this.play()
+    }
+  }
+
+  end() {
+    printLine(`\n${this.result.win}勝${this.result.lose}敗${this.result.draw}引き分けでした。`)
+    this.reset()
+  }
+
+  private reset() {
+    this.rounds = 0
+    this.currentRound = 1
+    this.result = {
+      win: 0,
+      lose: 0,
+      draw: 0,
+    }
+  }
+
+  static judge(userSelected: JankenOption, randomSelected: JankenOption) {
+    if (userSelected === 'rock') {
+      if (randomSelected === 'rock') return 'draw'
+      if (randomSelected === 'paper') return 'lose'
+      return 'win'
+    } else if (userSelected === 'paper') {
+      if (randomSelected === 'rock') return 'win'
+      if (randomSelected === 'paper') return 'draw'
+      return 'lose'
+    } else {
+      if (randomSelected === 'rock') return 'lose'
+      if (randomSelected === 'paper') return 'win'
+      return 'draw'
+    }
+  }
 }
 
 // 即時関数
@@ -167,8 +308,13 @@ class HitAndBlow {
     // console.log(age)
     // process.exit()
     // インスタンス
-    const hitandBlow = new HitAndBlow()
-    await hitandBlow.setting()
-    await hitandBlow.play()
-    hitandBlow.end()
+    // const hitandBlow = new HitAndBlow()
+    // await hitandBlow.setting()
+    // await hitandBlow.play()
+    // hitandBlow.end()
+    // GameStore型に対応するものを記載
+    new GameProcedure({
+        'hit and blow':new HitAndBlow(),
+        'janken':new Janken()
+    }).start()
 })()
