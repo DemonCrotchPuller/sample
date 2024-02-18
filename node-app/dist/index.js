@@ -95,7 +95,7 @@ var promptSelect = function (text, values) { return __awaiter(void 0, void 0, vo
 }); };
 // as const で readonly の扱いになる。タプル型
 var modes = ['normal', 'hard'];
-var nextActions = ['play again', 'exit'];
+var nextActions = ['play again', 'change game', 'exit'];
 var gameTitles = ['hit and blow', 'janken'];
 var GameProcedure = /** @class */ (function () {
     // 何も記載されていないコンストラクタだが、これで良い。
@@ -159,8 +159,17 @@ var GameProcedure = /** @class */ (function () {
                         return [4 /*yield*/, this.play()];
                     case 4:
                         _a.sent();
-                        return [3 /*break*/, 6];
+                        return [3 /*break*/, 9];
                     case 5:
+                        if (!(action === 'change game')) return [3 /*break*/, 8];
+                        return [4 /*yield*/, this.select()];
+                    case 6:
+                        _a.sent();
+                        return [4 /*yield*/, this.play()];
+                    case 7:
+                        _a.sent();
+                        return [3 /*break*/, 9];
+                    case 8:
                         if (action === 'exit') {
                             this.end();
                         }
@@ -168,8 +177,8 @@ var GameProcedure = /** @class */ (function () {
                             neverValue = action;
                             throw new Error(neverValue + " is an invalid acton.");
                         }
-                        _a.label = 6;
-                    case 6: return [2 /*return*/];
+                        _a.label = 9;
+                    case 9: return [2 /*return*/];
                 }
             });
         });
@@ -179,6 +188,12 @@ var GameProcedure = /** @class */ (function () {
         process.exit();
     };
     return GameProcedure;
+}());
+// ゲーム機能の抽象クラス
+var Game = /** @class */ (function () {
+    function Game() {
+    }
+    return Game;
 }());
 // 上だと可読性的に嬉しいらしい
 var HitAndBlow = /** @class */ (function () {

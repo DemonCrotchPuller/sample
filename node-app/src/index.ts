@@ -47,20 +47,22 @@ const modes = ['normal','hard'] as const
 // numberですべての配列を対象にしてtypeofで型を呼び出す
 type Mode = typeof modes[number]
 
-const nextActions = ['play again','exit'] as const
+const nextActions = ['play again','change game','exit'] as const
 type NextAction = typeof nextActions[number]
 
 const gameTitles = ['hit and blow','janken'] as const
 type GameTitle = typeof gameTitles[number]
 
 type GameStore = {
-    'hit and blow':HitAndBlow
-    'janken':Janken
+    // 'hit and blow':HitAndBlow
+    // 'janken':Janken
+    // インデックスシグネチャ
+    [key in GameTitle]: Game
 }
 
 class GameProcedure{
     private currentGameTitle : GameTitle|'' = ''
-    private currentGame : HitAndBlow | Janken | null = null 
+    private currentGame : Game | null = null 
 
     // 何も記載されていないコンストラクタだが、これで良い。
     // gameStoreプロパティがセットされる
@@ -86,6 +88,9 @@ class GameProcedure{
         const action = await promptSelect<NextAction>('ゲームを続けますか？',nextActions)
         if(action === 'play again'){
             await this.play()
+        }else if( action === 'change game'){
+            await this.select()
+            await this.play()
         }else if(action === 'exit'){
             this.end()
         }else{
@@ -99,9 +104,15 @@ class GameProcedure{
         process.exit()
     }
 }
+// ゲーム機能の抽象クラス
+abstract class Game{
+    abstract setting(): Promise<void>
+    abstract play():Promise<void>
+    abstract end():void
+}
 
 // 上だと可読性的に嬉しいらしい
-class HitAndBlow {
+class HitAndBlow implements Game{
     // 型アノテーション(string[]など)も本来なら不要。ただし、answerについては初期値が空なので必要。
     private readonly answerSource: string[] = ['0','1','2','3','4','5','6','7','8','9']
     private answer: string[] = []
@@ -221,7 +232,7 @@ class HitAndBlow {
 const jankenOptions = ['rock', 'paper', 'scissors'] as const
 type JankenOption = typeof jankenOptions[number]
 
-class Janken {
+class Janken implements Game{
   private rounds = 0
   private currentRound = 1
   private result = {
